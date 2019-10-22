@@ -137,22 +137,22 @@
   //
   // Software serial
   //
-  #define X_SERIAL_TX_PIN  PC13
+  #define X_SERIAL_TX_PIN  PE4
   #define X_SERIAL_RX_PIN  PC13
 
-  #define Y_SERIAL_TX_PIN  PE3
+  #define Y_SERIAL_TX_PIN  PE2
   #define Y_SERIAL_RX_PIN  PE3
 
-  #define Z_SERIAL_TX_PIN  PE1
+  #define Z_SERIAL_TX_PIN  PE0
   #define Z_SERIAL_RX_PIN  PE1
 
-  #define E0_SERIAL_TX_PIN PD4
+  #define E0_SERIAL_TX_PIN PD2
   #define E0_SERIAL_RX_PIN PD4
 
-  #define E1_SERIAL_TX_PIN PD1
+  #define E1_SERIAL_TX_PIN PD0
   #define E1_SERIAL_RX_PIN PD1
 
-  #define E2_SERIAL_TX_PIN PD6
+  #define E2_SERIAL_TX_PIN PD5
   #define E2_SERIAL_RX_PIN PD6
 #endif
 
@@ -207,14 +207,14 @@
     #define LCD_PINS_ENABLE PG7
     #define LCD_PINS_D4    PG3
 
-    // CR10_Stock Display needs a different delay setting on SKR PRO v1.1, so undef it here. 
+     // CR10_Stock Display needs a different delay setting on SKR PRO v1.1, so undef it here. 
     // It will be defined again at the #HAS_GRAPHICAL_LCD section below.
     #undef ST7920_DELAY_1
     #undef ST7920_DELAY_2
     #undef ST7920_DELAY_3
 
 
-  #else
+ #else
 
     #define LCD_PINS_RS    PD10
 
