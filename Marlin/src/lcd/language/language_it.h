@@ -143,9 +143,9 @@ namespace Language_it {
   PROGMEM Language_Str MSG_IDEX_MODE_DUPLICATE             = _UxGT("Duplicazione");
   PROGMEM Language_Str MSG_IDEX_MODE_MIRRORED_COPY         = _UxGT("Copia speculare");
   PROGMEM Language_Str MSG_IDEX_MODE_FULL_CTRL             = _UxGT("Pieno controllo");
-  PROGMEM Language_Str MSG_X_OFFSET                        = _UxGT("2° ugello X");
-  PROGMEM Language_Str MSG_Y_OFFSET                        = _UxGT("2° ugello Y");
-  PROGMEM Language_Str MSG_Z_OFFSET                        = _UxGT("2° ugello Z");
+  PROGMEM Language_Str MSG_HOTEND_OFFSET_X                 = _UxGT("2° ugello X");
+  PROGMEM Language_Str MSG_HOTEND_OFFSET_Y                 = _UxGT("2° ugello Y");
+  PROGMEM Language_Str MSG_HOTEND_OFFSET_Z                 = _UxGT("2° ugello Z");
   PROGMEM Language_Str MSG_UBL_DOING_G29                   = _UxGT("G29 in corso");
   PROGMEM Language_Str MSG_UBL_TOOLS                       = _UxGT("Strumenti UBL");
   PROGMEM Language_Str MSG_UBL_LEVEL_BED                   = _UxGT("Unified Bed Leveling");
@@ -419,6 +419,7 @@ namespace Language_it {
   PROGMEM Language_Str MSG_PAUSE_PRINT                     = _UxGT("Pausa stampa");
   PROGMEM Language_Str MSG_RESUME_PRINT                    = _UxGT("Riprendi stampa");
   PROGMEM Language_Str MSG_STOP_PRINT                      = _UxGT("Arresta stampa");
+  PROGMEM Language_Str MSG_CANCEL_OBJECT                   = _UxGT("Cancella Oggetto");
   PROGMEM Language_Str MSG_OUTAGE_RECOVERY                 = _UxGT("Ripresa da PowerLoss");
   PROGMEM Language_Str MSG_MEDIA_MENU                      = _UxGT("Stampa da media");
   PROGMEM Language_Str MSG_NO_MEDIA                        = _UxGT("Media non presente");

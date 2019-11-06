@@ -333,6 +333,7 @@ inline bool IsStopped() { return !Running; }
 
 bool printingIsActive();
 bool printingIsPaused();
+void startOrResumeJob();
 
 extern bool wait_for_heatup;
 
@@ -368,10 +369,12 @@ bool pin_is_protected(const pin_t pin);
 void protected_pin_err();
 
 #if HAS_SUICIDE
-  inline void suicide() { OUT_WRITE(SUICIDE_PIN, LOW); }
+  inline void suicide() { OUT_WRITE(SUICIDE_PIN, SUICIDE_PIN_INVERTING); }
 #endif
 
 #if ENABLED(G29_RETRY_AND_RECOVER)
   void event_probe_recover();
   void event_probe_failure();
 #endif
+
+extern const char G28_STR[], M21_STR[], M23_STR[], M24_STR[], NUL_STR[];

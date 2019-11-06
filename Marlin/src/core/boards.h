@@ -99,6 +99,8 @@
 #define BOARD_OVERLORD                1143  // Overlord/Overlord Pro
 #define BOARD_HJC2560C_REV1           1144  // ADIMLab Gantry v1
 #define BOARD_HJC2560C_REV2           1145  // ADIMLab Gantry v2
+#define BOARD_TANGO                   1146  // BIQU Tango V1
+#define BOARD_MKS_GEN_L_V2            1147  // MKS GEN L V2
 
 //
 // RAMBo and derivatives
@@ -289,7 +291,7 @@
 //
 
 #define BOARD_BEAST                   4200  // STM32F4xxVxT6 Libmaple-based STM32F4 controller
-#define BOARD_STM32F4                 4201  // STM32 STM32GENERIC-based STM32F4 controller
+#define BOARD_GENERIC_STM32F4         4201  // STM32 STM32GENERIC-based STM32F4 controller
 #define BOARD_ARMED                   4202  // Arm'ed STM32F4-based controller
 #define BOARD_RUMBA32                 4203  // RUMBA32 STM32F4-based controller
 #define BOARD_BLACK_STM32F407VE       4204  // BLACK_STM32F407VE

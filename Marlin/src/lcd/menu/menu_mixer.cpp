@@ -29,11 +29,9 @@
 #if HAS_LCD_MENU && ENABLED(MIXING_EXTRUDER)
 
 #include "menu.h"
-#include "../../feature/mixing.h"
+#include "menu_addon.h"
 
-#include "../dogm/ultralcd_DOGM.h"
-#include "../ultralcd.h"
-#include "../lcdprint.h"
+#include "../../feature/mixing.h"
 
 #define CHANNEL_MIX_EDITING !DUAL_MIXING_EXTRUDER
 
@@ -124,12 +122,10 @@ static uint8_t v_index;
 
 #if DUAL_MIXING_EXTRUDER
   void _lcd_draw_mix(const uint8_t y) {
-    char tmp[10]; // "100%_100%"
-    SETCURSOR(2, y);
-    lcd_put_u8str_P(GET_TEXT(MSG_MIX));
-    SETCURSOR(LCD_WIDTH - 9, y);
+    char tmp[20]; // "100%_100%"
     sprintf_P(tmp, PSTR("%3d%% %3d%%"), int(mixer.mix[0]), int(mixer.mix[1]));
-    lcd_put_u8str(tmp);
+    SETCURSOR(2, y); lcd_put_u8str_P(GET_TEXT(MSG_MIX));
+    SETCURSOR_RJ(9, y); lcd_put_u8str(tmp);
   }
 #endif
 
@@ -249,22 +245,6 @@ void lcd_mixer_mix_edit() {
   }
 #endif
 
-//
-// Reset All V-Tools
-//
-void menu_mixer_vtools_reset_confirm() {
-  do_select_screen(
-    GET_TEXT(MSG_BUTTON_RESET), GET_TEXT(MSG_BUTTON_CANCEL),
-    []{
-      mixer.reset_vtools();
-      LCD_MESSAGEPGM(MSG_VTOOLS_RESET);
-      ui.return_to_status();
-    },
-    ui.goto_previous_screen,
-    GET_TEXT(MSG_RESET_VTOOLS), nullptr, PSTR("?")
-  );
-}
-
 void menu_mixer() {
   START_MENU();
   BACK_ITEM(MSG_MAIN);
@@ -291,7 +271,19 @@ void menu_mixer() {
     SUBMENU(MSG_MIX, _lcd_goto_mix_edit);
   #endif
 
-  SUBMENU(MSG_RESET_VTOOLS, menu_mixer_vtools_reset_confirm);
+  //
+  // Reset All V-Tools
+  //
+  CONFIRM_ITEM(MSG_RESET_VTOOLS,
+    MSG_BUTTON_RESET, MSG_BUTTON_CANCEL,
+    []{
+      mixer.reset_vtools();
+      LCD_MESSAGEPGM(MSG_VTOOLS_RESET);
+      ui.return_to_status();
+    },
+    ui.goto_previous_screen,
+    GET_TEXT(MSG_RESET_VTOOLS), (PGM_P)nullptr, PSTR("?")
+  );
 
   #if ENABLED(GRADIENT_MIX)
   {
