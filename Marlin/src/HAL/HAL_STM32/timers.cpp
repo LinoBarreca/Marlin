@@ -36,7 +36,8 @@
 // Private Variables
 // ------------------------
 
-stm32_timer_t TimerHandle[NUM_HARDWARE_TIMERS];
+HardwareTimer *TimerHandle[NUM_HARDWARE_TIMERS];
+bool TimerEnabled[NUM_HARDWARE_TIMERS];
 
 // ------------------------
 // Public functions
@@ -48,22 +49,22 @@ void HAL_timer_start(const uint8_t timer_num, const uint32_t frequency) {
 
   if (!timers_initialized[timer_num]) {
     uint32_t step_prescaler = STEPPER_TIMER_PRESCALE - 1,
-                       temp_prescaler = TEMP_TIMER_PRESCALE - 1;
+             temp_prescaler = TEMP_TIMER_PRESCALE - 1;
+
     switch (timer_num) {
       case STEP_TIMER_NUM:
         // STEPPER TIMER - use a 32bit timer if possible
-        TimerHandle[timer_num].timer = STEP_TIMER_DEV;
-        TimerHandle[timer_num].irqHandle = Step_Handler;
-        TimerHandleInit(&TimerHandle[timer_num], (((HAL_TIMER_RATE) / step_prescaler) / frequency) - 1, step_prescaler);
-        HAL_NVIC_SetPriority(STEP_TIMER_IRQ_NAME, STEP_TIMER_IRQ_PRIO, 0);
+        TimerHandle[timer_num] = new HardwareTimer(STEP_TIMER_DEV);
+        TimerHandle[timer_num]->setPrescaleFactor(step_prescaler);
+        TimerHandle[timer_num]->attachInterrupt(Step_Handler);
+        TimerHandle[timer_num]->setOverflow(frequency, HERTZ_FORMAT);
         break;
-
       case TEMP_TIMER_NUM:
         // TEMP TIMER - any available 16bit Timer
-        TimerHandle[timer_num].timer = TEMP_TIMER_DEV;
-        TimerHandle[timer_num].irqHandle = Temp_Handler;
-        TimerHandleInit(&TimerHandle[timer_num], (((HAL_TIMER_RATE) / temp_prescaler) / frequency) - 1, temp_prescaler);
-        HAL_NVIC_SetPriority(TEMP_TIMER_IRQ_NAME, TEMP_TIMER_IRQ_PRIO, 0);
+        TimerHandle[timer_num] = new HardwareTimer(TEMP_TIMER_DEV);
+        TimerHandle[timer_num]->attachInterrupt(Temp_Handler);
+        TimerHandle[timer_num]->setPrescaleFactor(temp_prescaler);
+        TimerHandle[timer_num]->setOverflow(frequency, HERTZ_FORMAT);
         break;
     }
     timers_initialized[timer_num] = true;
@@ -71,23 +72,17 @@ void HAL_timer_start(const uint8_t timer_num, const uint32_t frequency) {
 }
 
 void HAL_timer_enable_interrupt(const uint8_t timer_num) {
-  const IRQn_Type IRQ_Id = IRQn_Type(getTimerIrq(TimerHandle[timer_num].timer));
-  HAL_NVIC_EnableIRQ(IRQ_Id);
+  TimerHandle[timer_num]->resume();
+  TimerEnabled[timer_num]=true;
 }
 
 void HAL_timer_disable_interrupt(const uint8_t timer_num) {
-  const IRQn_Type IRQ_Id = IRQn_Type(getTimerIrq(TimerHandle[timer_num].timer));
-  HAL_NVIC_DisableIRQ(IRQ_Id);
-
-  // We NEED memory barriers to ensure Interrupts are actually disabled!
-  // ( https://dzone.com/articles/nvic-disabling-interrupts-on-arm-cortex-m-and-the )
-  __DSB();
-  __ISB();
+  TimerHandle[timer_num]->pause();
+  TimerEnabled[timer_num]=false;
 }
 
 bool HAL_timer_interrupt_enabled(const uint8_t timer_num) {
-  const uint32_t IRQ_Id = getTimerIrq(TimerHandle[timer_num].timer);
-  return NVIC->ISER[IRQ_Id >> 5] & _BV32(IRQ_Id & 0x1F);
+  return TimerEnabled[timer_num];
 }
 
 #endif // ARDUINO_ARCH_STM32 && !STM32GENERIC

@@ -119,22 +119,22 @@
 #define ENABLE_TEMPERATURE_INTERRUPT() HAL_timer_enable_interrupt(TEMP_TIMER_NUM)
 #define DISABLE_TEMPERATURE_INTERRUPT() HAL_timer_disable_interrupt(TEMP_TIMER_NUM)
 
-extern void Step_Handler(stimer_t *htim);
-extern void Temp_Handler(stimer_t *htim);
-#define HAL_STEP_TIMER_ISR() void Step_Handler(stimer_t *htim)
-#define HAL_TEMP_TIMER_ISR() void Temp_Handler(stimer_t *htim)
+extern void Step_Handler(HardwareTimer *htim);
+extern void Temp_Handler(HardwareTimer *htim);
+#define HAL_STEP_TIMER_ISR() void Step_Handler(HardwareTimer *htim)
+#define HAL_TEMP_TIMER_ISR() void Temp_Handler(HardwareTimer *htim)
 
 // ------------------------
 // Types
 // ------------------------
 
-typedef stimer_t stm32_timer_t;
+typedef HardwareTimer stm32_timer_t;
 
 // ------------------------
 // Public Variables
 // ------------------------
 
-extern stm32_timer_t TimerHandle[];
+extern HardwareTimer *TimerHandle[];
 
 // ------------------------
 // Public functions
@@ -146,17 +146,17 @@ void HAL_timer_disable_interrupt(const uint8_t timer_num);
 bool HAL_timer_interrupt_enabled(const uint8_t timer_num);
 
 FORCE_INLINE static uint32_t HAL_timer_get_count(const uint8_t timer_num) {
-  return __HAL_TIM_GET_COUNTER(&TimerHandle[timer_num].handle);
+  return TimerHandle[timer_num]->getCount();
 }
 
 FORCE_INLINE static void HAL_timer_set_compare(const uint8_t timer_num, const uint32_t compare) {
-  __HAL_TIM_SET_AUTORELOAD(&TimerHandle[timer_num].handle, compare);
+  TimerHandle[timer_num]->setCaptureCompare(0, compare, TICK_COMPARE_FORMAT); //use channel 0
   if (HAL_timer_get_count(timer_num) >= compare)
-    TimerHandle[timer_num].handle.Instance->EGR |= TIM_EGR_UG; // Generate an immediate update interrupt
+    TimerHandle[timer_num]->refresh(); // Generate an immediate update interrupt
 }
 
 FORCE_INLINE static hal_timer_t HAL_timer_get_compare(const uint8_t timer_num) {
-  return __HAL_TIM_GET_AUTORELOAD(&TimerHandle[timer_num].handle);
+  return TimerHandle[timer_num]->getCaptureCompare(0); //use still channel 0
 }
 
 #define HAL_timer_isr_prologue(TIMER_NUM)
