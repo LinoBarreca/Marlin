@@ -137,7 +137,7 @@ millis_t MarlinUI::next_button_update_ms; // = 0
 
 // Encoder Handling
 #if HAS_ENCODER_ACTION
-  uint16_t MarlinUI::encoderPosition;
+  uint32_t MarlinUI::encoderPosition;
   volatile int8_t encoderDiff; // Updated in update_buttons, added to encoderPosition every LCD update
 #endif
 
@@ -293,6 +293,10 @@ void MarlinUI::init() {
     #endif
     #if BUTTON_EXISTS(ENC)
       SET_INPUT_PULLUP(BTN_ENC);
+    #endif
+
+    #if BUTTON_EXISTS(BACK)
+      SET_INPUT_PULLUP(BTN_BACK);
     #endif
 
     #if BUTTON_EXISTS(UP)
@@ -460,7 +464,7 @@ bool MarlinUI::get_blink() {
 
         #endif // HAS_LCD_MENU
 
-        if (!homed && RRK(EN_KEYPAD_F1)) queue.inject_P(PSTR("G28"));
+        if (!homed && RRK(EN_KEYPAD_F1)) queue.inject_P(G28_STR);
         return true;
       }
 
@@ -1526,7 +1530,7 @@ void MarlinUI::update() {
     #if ENABLED(PARK_HEAD_ON_PAUSE)
       wait_for_heatup = wait_for_user = false;
     #endif
-    if (IS_SD_PAUSED()) queue.inject_P(PSTR("M24"));
+    if (IS_SD_PAUSED()) queue.inject_P(M24_STR);
     #ifdef ACTION_ON_RESUME
       host_action_resume();
     #endif

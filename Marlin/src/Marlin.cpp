@@ -145,6 +145,10 @@
   #include "feature/power_loss_recovery.h"
 #endif
 
+#if ENABLED(CANCEL_OBJECTS)
+  #include "feature/cancel_object.h"
+#endif
+
 #if HAS_FILAMENT_SENSOR
   #include "feature/runout.h"
 #endif
@@ -176,6 +180,12 @@
 #if HAS_DRIVER(L6470)
   #include "libs/L6470/L6470_Marlin.h"
 #endif
+
+const char G28_STR[] PROGMEM = "G28",
+           M21_STR[] PROGMEM = "M21",
+           M23_STR[] PROGMEM = "M23 %s",
+           M24_STR[] PROGMEM = "M24",
+           NUL_STR[] PROGMEM = "";
 
 bool Running = true;
 
@@ -217,9 +227,9 @@ void setup_killpin() {
 
 void setup_powerhold() {
   #if HAS_SUICIDE
-    OUT_WRITE(SUICIDE_PIN, HIGH);
+    OUT_WRITE(SUICIDE_PIN, !SUICIDE_PIN_INVERTING);
   #endif
-  #if HAS_POWER_SWITCH
+  #if ENABLED(PSU_CONTROL)
     #if ENABLED(PS_DEFAULT_OFF)
       powersupply_on = true;  PSU_OFF();
     #else
@@ -342,19 +352,63 @@ void disable_all_steppers() {
 
 #endif
 
+#if ENABLED(ADVANCED_PAUSE_FEATURE)
+  #include "feature/pause.h"
+#else
+  constexpr bool did_pause_print = false;
+#endif
+
 /**
  * Printing is active when the print job timer is running
  */
 bool printingIsActive() {
-  return print_job_timer.isRunning() || IS_SD_PRINTING();
+  return !did_pause_print && (print_job_timer.isRunning() || IS_SD_PRINTING());
 }
 
 /**
  * Printing is paused according to SD or host indicators
  */
 bool printingIsPaused() {
-  return print_job_timer.isPaused() || IS_SD_PAUSED();
+  return did_pause_print || print_job_timer.isPaused() || IS_SD_PAUSED();
 }
+
+void startOrResumeJob() {
+  if (!printingIsPaused()) {
+    #if ENABLED(CANCEL_OBJECTS)
+      cancelable.reset();
+    #endif
+    #if ENABLED(LCD_SHOW_E_TOTAL)
+      e_move_accumulator = 0;
+    #endif
+  }
+  print_job_timer.start();
+}
+
+#if ENABLED(SDSUPPORT)
+
+  void abortSDPrinting() {
+    card.stopSDPrint(
+      #if SD_RESORT
+        true
+      #endif
+    );
+    queue.clear();
+    quickstop_stepper();
+    print_job_timer.stop();
+    #if DISABLED(SD_ABORT_NO_COOLDOWN)
+      thermalManager.disable_all_heaters();
+    #endif
+    thermalManager.zero_fan_speeds();
+    wait_for_heatup = false;
+    #if ENABLED(POWER_LOSS_RECOVERY)
+      card.removeJobRecoveryFile();
+    #endif
+    #ifdef EVENT_GCODE_SD_STOP
+      queue.inject_P(PSTR(EVENT_GCODE_SD_STOP));
+    #endif
+  }
+
+#endif
 
 /**
  * Manage several activities:
@@ -461,7 +515,7 @@ void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
       if (ELAPSED(ms, next_home_key_ms)) {
         next_home_key_ms = ms + HOME_DEBOUNCE_DELAY;
         LCD_MESSAGEPGM(MSG_AUTO_HOME);
-        queue.enqueue_now_P(PSTR("G28"));
+        queue.enqueue_now_P(G28_STR);
       }
     }
   #endif
@@ -692,7 +746,7 @@ void kill(PGM_P const lcd_error/*=nullptr*/, PGM_P const lcd_component/*=nullptr
   SERIAL_ERROR_MSG(MSG_ERR_KILLED);
 
   #if HAS_DISPLAY
-    ui.kill_screen(lcd_error ?: GET_TEXT(MSG_KILLED), lcd_component);
+    ui.kill_screen(lcd_error ?: GET_TEXT(MSG_KILLED), lcd_component ?: PSTR(""));
   #else
     UNUSED(lcd_error);
     UNUSED(lcd_component);
@@ -721,7 +775,7 @@ void minkill(const bool steppers_off/*=false*/) {
   // Power off all steppers (for M112) or just the E steppers
   steppers_off ? disable_all_steppers() : disable_e_steppers();
 
-  #if HAS_POWER_SWITCH
+  #if ENABLED(PSU_CONTROL)
     PSU_OFF();
   #endif
 
@@ -901,8 +955,6 @@ void setup() {
   #endif
 
   ui.init();
-  ui.reset_status();
-
   #if HAS_SPI_LCD && ENABLED(SHOW_BOOTSCREEN)
     ui.show_bootscreen();
   #endif
@@ -930,6 +982,8 @@ void setup() {
   thermalManager.init();    // Initialize temperature loop
 
   print_job_timer.init();   // Initial setup of print job timer
+
+  ui.reset_status();        // Print startup message after print statistics are loaded
 
   endstops.init();          // Init endstops and pullups
 
@@ -1102,34 +1156,12 @@ void loop() {
     idle(); // Do an idle first so boot is slightly faster
 
     #if ENABLED(SDSUPPORT)
-
       card.checkautostart();
-
-      if (card.flag.abort_sd_printing) {
-        card.stopSDPrint(
-          #if SD_RESORT
-            true
-          #endif
-        );
-        queue.clear();
-        quickstop_stepper();
-        print_job_timer.stop();
-        #if DISABLED(SD_ABORT_NO_COOLDOWN)
-          thermalManager.disable_all_heaters();
-        #endif
-        thermalManager.zero_fan_speeds();
-        wait_for_heatup = false;
-        #if ENABLED(POWER_LOSS_RECOVERY)
-          card.removeJobRecoveryFile();
-        #endif
-        #ifdef EVENT_GCODE_SD_STOP
-          queue.inject_P(PSTR(EVENT_GCODE_SD_STOP));
-        #endif
-      }
-
-    #endif // SDSUPPORT
+      if (card.flag.abort_sd_printing) abortSDPrinting();
+    #endif
 
     queue.advance();
+
     endstops.event_handler();
   }
 }

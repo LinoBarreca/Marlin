@@ -25,7 +25,6 @@
 #if HAS_LCD_MENU
 
 #include "menu.h"
-#include "../ultralcd.h"
 #include "../../module/planner.h"
 #include "../../module/motion.h"
 #include "../../module/printcounter.h"
@@ -132,7 +131,7 @@ void MenuItem_gcode::action(PGM_P const, PGM_P const pgcode) { queue.inject_P(pg
  *
  *   bool MenuItem_int3::_edit();
  *   void MenuItem_int3::edit(); // edit int16_t (interactively)
- *   void MenuItem_int3::action(PGM_P const pstr, int16_t * const ptr, const int16_t minValue, const int16_t maxValue, const screenFunc_t callback = null, const bool live = false);
+ *   void MenuItem_int3::action(PGM_P const pstr, int16_t * const ptr, const int32_t minValue, const int32_t maxValue, const screenFunc_t callback = null, const bool live = false);
  *
  * You can then use one of the menu macros to present the edit interface:
  *   EDIT_ITEM(int3, MSG_SPEED, &feedrate_percentage, 10, 999)
@@ -142,16 +141,16 @@ void MenuItem_gcode::action(PGM_P const, PGM_P const pgcode) { queue.inject_P(pg
  *
  * ...which calls:
  *       MenuItem_int3::action(plabel, &feedrate_percentage, 10, 999)
- *       draw_menu_item_int3(encoderLine == _thisItemNr, _lcdLineNr, plabel, &feedrate_percentage, 10, 999)
+ *       MenuItem_int3::draw(encoderLine == _thisItemNr, _lcdLineNr, plabel, &feedrate_percentage, 10, 999)
  */
 void MenuEditItemBase::edit(strfunc_t strfunc, loadfunc_t loadfunc) {
   #if ENABLED(TOUCH_BUTTONS)
     ui.repeat_delay = BUTTON_DELAY_EDIT;
   #endif
-  if (int16_t(ui.encoderPosition) < 0) ui.encoderPosition = 0;
-  if (int16_t(ui.encoderPosition) > maxEditValue) ui.encoderPosition = maxEditValue;
+  if (int32_t(ui.encoderPosition) < 0) ui.encoderPosition = 0;
+  if (int32_t(ui.encoderPosition) > maxEditValue) ui.encoderPosition = maxEditValue;
   if (ui.should_draw())
-    draw_edit_screen(editLabel, strfunc(ui.encoderPosition + minEditValue));
+    edit_screen(editLabel, strfunc(ui.encoderPosition + minEditValue));
   if (ui.lcd_clicked || (liveEdit && ui.should_draw())) {
     if (editValue != nullptr) loadfunc(editValue, ui.encoderPosition + minEditValue);
     if (callbackFunc && (liveEdit || ui.lcd_clicked)) (*callbackFunc)();
@@ -188,6 +187,7 @@ DEFINE_MENU_EDIT_ITEM(float43);     // 1.234
 DEFINE_MENU_EDIT_ITEM(float5);      // 12345      right-justified
 DEFINE_MENU_EDIT_ITEM(float5_25);   // 12345      right-justified (25 increment)
 DEFINE_MENU_EDIT_ITEM(float51);     // 1234.5     right-justified
+DEFINE_MENU_EDIT_ITEM(float41sign); // +123.4
 DEFINE_MENU_EDIT_ITEM(float51sign); // +1234.5
 DEFINE_MENU_EDIT_ITEM(float52sign); // +123.45
 DEFINE_MENU_EDIT_ITEM(long5);       // 12345      right-justified
@@ -310,7 +310,7 @@ void MarlinUI::goto_screen(screenFunc_t screen, const uint16_t encoder/*=0*/, co
 static PGM_P sync_message;
 
 void MarlinUI::_synchronize() {
-  if (should_draw()) draw_menu_item_static(LCD_HEIGHT >= 4 ? 1 : 0, sync_message);
+  if (should_draw()) MenuItem_static::draw(LCD_HEIGHT >= 4, sync_message);
   if (no_reentry) return;
   // Make this the current handler till all moves are done
   no_reentry = true;
@@ -341,7 +341,7 @@ void MarlinUI::synchronize(PGM_P const msg/*=nullptr*/) {
 void scroll_screen(const uint8_t limit, const bool is_menu) {
   ui.encoder_direction_menus();
   ENCODER_RATE_MULTIPLY(false);
-  if (ui.encoderPosition > 0x8000) ui.encoderPosition = 0;
+  if (int32_t(ui.encoderPosition) < 0) ui.encoderPosition = 0;
   if (ui.first_page) {
     encoderLine = ui.encoderPosition / (ENCODER_STEPS_PER_MENU_ITEM);
     screen_changed = false;
@@ -391,7 +391,7 @@ void scroll_screen(const uint8_t limit, const bool is_menu) {
       constexpr bool do_probe = true;
     #endif
     if (ui.encoderPosition) {
-      const int16_t babystep_increment = int16_t(ui.encoderPosition) * (BABYSTEP_MULTIPLICATOR);
+      const int16_t babystep_increment = int16_t(ui.encoderPosition) * (BABYSTEP_MULTIPLICATOR_Z);
       ui.encoderPosition = 0;
 
       const float diff = planner.steps_to_mm[Z_AXIS] * babystep_increment,
@@ -418,10 +418,10 @@ void scroll_screen(const uint8_t limit, const bool is_menu) {
     if (ui.should_draw()) {
       #if ENABLED(BABYSTEP_HOTEND_Z_OFFSET)
         if (!do_probe)
-          draw_edit_screen(GET_TEXT(MSG_Z_OFFSET), ftostr43sign(hotend_offset[active_extruder].z));
+          MenuEditItemBase::edit_screen(GET_TEXT(MSG_HOTEND_OFFSET_Z), ftostr43sign(hotend_offset[active_extruder].z));
         else
       #endif
-          draw_edit_screen(GET_TEXT(MSG_ZPROBE_ZOFFSET), ftostr43sign(probe_offset.z));
+          MenuEditItemBase::edit_screen(GET_TEXT(MSG_ZPROBE_ZOFFSET), ftostr43sign(probe_offset.z));
 
       #if ENABLED(BABYSTEP_ZPROBE_GFX_OVERLAY)
         if (do_probe) _lcd_zoffset_overlay_gfx(probe_offset.z);
@@ -466,7 +466,7 @@ void scroll_screen(const uint8_t limit, const bool is_menu) {
 
 void _lcd_draw_homing() {
   constexpr uint8_t line = (LCD_HEIGHT - 1) / 2;
-  if (ui.should_draw()) draw_menu_item_static(line, GET_TEXT(MSG_LEVEL_BED_HOMING));
+  if (ui.should_draw()) MenuItem_static::draw(line, GET_TEXT(MSG_LEVEL_BED_HOMING));
   ui.refresh(LCDVIEW_CALL_NO_REDRAW);
 }
 
@@ -487,7 +487,8 @@ bool MarlinUI::update_selection() {
   }
   return selection;
 }
-void do_select_screen(PGM_P const yes, PGM_P const no, selectFunc_t yesFunc, selectFunc_t noFunc, PGM_P const pref, const char * const string/*=nullptr*/, PGM_P const suff/*=nullptr*/) {
+
+void MenuItem_confirm::select_screen(PGM_P const yes, PGM_P const no, selectFunc_t yesFunc, selectFunc_t noFunc, PGM_P const pref, const char * const string/*=nullptr*/, PGM_P const suff/*=nullptr*/) {
   const bool ui_selection = ui.update_selection(), got_click = ui.use_click();
   if (got_click || ui.should_draw()) {
     draw_select_screen(yes, no, ui_selection, pref, string, suff);
