@@ -137,22 +137,22 @@
   //
   // Software serial
   //
-  #define X_SERIAL_TX_PIN  PC13
+  #define X_SERIAL_TX_PIN  PE4
   #define X_SERIAL_RX_PIN  PC13
 
-  #define Y_SERIAL_TX_PIN  PE3
+  #define Y_SERIAL_TX_PIN  PE2
   #define Y_SERIAL_RX_PIN  PE3
 
-  #define Z_SERIAL_TX_PIN  PE1
+  #define Z_SERIAL_TX_PIN  PE0
   #define Z_SERIAL_RX_PIN  PE1
 
-  #define E0_SERIAL_TX_PIN PD4
+  #define E0_SERIAL_TX_PIN PD2
   #define E0_SERIAL_RX_PIN PD4
 
-  #define E1_SERIAL_TX_PIN PD1
+  #define E1_SERIAL_TX_PIN PD0
   #define E1_SERIAL_RX_PIN PD1
 
-  #define E2_SERIAL_TX_PIN PD6
+  #define E2_SERIAL_TX_PIN PD5
   #define E2_SERIAL_RX_PIN PD6
 
   // Reduce baud rate to improve software serial reliability
@@ -217,7 +217,7 @@
     #undef ST7920_DELAY_3
 
 
-  #else
+ #else
 
     #define LCD_PINS_RS    PD10
 
@@ -260,15 +260,9 @@
 
   // Alter timing for graphical display
   #if HAS_GRAPHICAL_LCD
-    #ifndef ST7920_DELAY_1
-      #define ST7920_DELAY_1 DELAY_NS(96)
-    #endif
-    #ifndef ST7920_DELAY_2
-      #define ST7920_DELAY_2 DELAY_NS(48)
-    #endif
-    #ifndef ST7920_DELAY_3
-      #define ST7920_DELAY_3 DELAY_NS(600)
-    #endif
+    #define BOARD_ST7920_DELAY_1 DELAY_NS(96)
+    #define BOARD_ST7920_DELAY_2 DELAY_NS(48)
+    #define BOARD_ST7920_DELAY_3 DELAY_NS(600)
   #endif
 
 #endif // HAS_SPI_LCD
