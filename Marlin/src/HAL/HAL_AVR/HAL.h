@@ -25,7 +25,7 @@
 #include "math.h"
 
 #ifdef USBCON
-  #include "HardwareSerial.h"
+  #include <HardwareSerial.h>
 #else
   #define HardwareSerial_h // Hack to prevent HardwareSerial.h header inclusion
   #include "MarlinSerial.h"
@@ -365,6 +365,7 @@ inline void HAL_adc_init() {
   #define HAL_START_ADC(pin) ADCSRB = 0; SET_ADMUX_ADCSRA(pin)
 #endif
 
+#define HAL_ADC_RESOLUTION 10
 #define HAL_READ_ADC()  ADC
 #define HAL_ADC_READY() !TEST(ADCSRA, ADSC)
 

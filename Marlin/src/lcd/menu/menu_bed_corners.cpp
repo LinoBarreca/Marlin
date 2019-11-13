@@ -88,6 +88,7 @@ static inline void _lcd_level_bed_corners_homing() {
   _lcd_draw_homing();
   if (all_axes_homed()) {
     bed_corner = 0;
+    ui.goto_screen([]{
     MenuItem_confirm::select_screen(
       GET_TEXT(MSG_BUTTON_NEXT), GET_TEXT(MSG_BUTTON_DONE),
       _lcd_goto_next_corner,
@@ -97,14 +98,15 @@ static inline void _lcd_level_bed_corners_homing() {
         #endif
         ui.goto_previous_screen_no_defer();
       },
-      GET_TEXT(
+        GET_TEXT(
         #if ENABLED(LEVEL_CENTER_TOO)
           MSG_LEVEL_BED_NEXT_POINT
         #else
           MSG_NEXT_CORNER
         #endif
-      ), (PGM_P)nullptr, PSTR("?")
+        ), (PGM_P)nullptr, PSTR("?")
     );
+    });
     ui.set_selection(true);
     _lcd_goto_next_corner();
   }
